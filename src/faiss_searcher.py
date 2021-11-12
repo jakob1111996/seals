@@ -1,3 +1,4 @@
+# This file implements the FAISS similarity search functionality
 import glob
 import os
 
@@ -5,6 +6,8 @@ import faiss
 import numpy as np
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
+
+data_folder = "data/saved_embeddings/train"
 
 
 class FaissIndex:
@@ -40,7 +43,13 @@ class FaissIndex:
         """
         This method reads all the data and adds it to the IndexLSH object.
         """
-        data_folder = "data/saved_embeddings/train"
+        mm = np.memmap(
+            "data/embeddings.bin",
+            dtype="float32",
+            mode="w+",
+            shape=(8121242, 256),
+        )
+        line = 0
         with alive_bar(
             len(glob.glob(os.path.join(data_folder, "*.parquet.gzip"))),
             title="Generating index",
@@ -48,9 +57,11 @@ class FaissIndex:
         ) as bar:
             for file in glob.glob(os.path.join(data_folder, "*.parquet.gzip")):
                 data = pq.read_table(file)
-                self.add_data_to_index(
-                    np.stack(np.array(data[0].to_numpy()), axis=0)
-                )
+                data = np.stack(np.array(data[0].to_numpy()), axis=0)
+                mm[line : line + data.shape[0], :] = data
+                mm.flush()
+                line += data.shape[0]
+                self.add_data_to_index(data)
                 bar()
         self.save_index()
 
@@ -67,6 +78,21 @@ class FaissIndex:
         :param file_name: The name of the index file
         """
         self.index = faiss.read_index(file_name)
+
+
+def get_image_uris_ordered():
+    """
+    Get all the image URIs ordered the same way as the corresponding
+    embeddings in the FAISS Index.
+    :return: Array of image URIs
+    """
+    image_uris = np.empty((0,))
+    for file in glob.glob(os.path.join(data_folder, "*.parquet.gzip")):
+        data = pq.read_table(file)
+        image_uris = np.concatenate(
+            [image_uris, np.array(data[1].to_numpy())], axis=0
+        )
+    return image_uris
 
 
 if __name__ == "__main__":

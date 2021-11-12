@@ -1,4 +1,6 @@
-from data_reader import DataReader
+# This file implements the SEALS algorithm logic
+from data_reader import DataManager
+from faiss_searcher import FaissIndex
 
 
 class SEALSAlgorithm:
@@ -8,5 +10,5 @@ class SEALSAlgorithm:
     """
 
     def __init__(self):
-        self.data_reader = DataReader()
-        self.eval_classes = self.data_reader.get_eval_classes()
+        self.faiss_index = FaissIndex()
+        self.data_reader = DataManager(self.faiss_index)
