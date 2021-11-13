@@ -1,19 +1,13 @@
 # This file implements the data reading functionality
 import csv
+import os
 from itertools import chain
 
 import numpy as np
-import pandas as pd
 
-from faiss_searcher import get_image_uris_ordered
-
-images_file = (
-    "data/saved_metadata/oidv6-train-images-with-labels-with-rotation.csv"
-)
-classes_file = "data/saved_metadata/oidv6-class-descriptions.csv"
-annotations_file = (
-    "data/saved_metadata/oidv6-train-annotations-human-imagelabels.csv"
-)
+from definitions import classes_file, cleaned_annotations_file, images_file
+from faiss_searcher import FaissIndex, get_all_image_uris_ordered
+from util import cleanup_annotations, get_csv_column
 
 
 class DataManager:
@@ -40,8 +34,11 @@ class DataManager:
         self.eval_classes = None
         self.eval_class_ids = {}
         self.eval_class_indexes = {}
+        if not os.path.exists(cleaned_annotations_file):
+            self.first_time_setup()
         self.choose_eval_classes()
         self.determine_indices_per_class()
+        print("Data Setup completed successfully!")
 
     def get_positives_for_classes(self):
         """
@@ -53,13 +50,14 @@ class DataManager:
             0: Dictionary with class string as key and positive count as value
             1: Dictionary with class string as key and image id list as value
         """
-        classes_list = self.get_csv_column(classes_file, 0)
+        classes_list = get_csv_column(classes_file, 0)
         image_ids = {im_class: [] for im_class in classes_list}
-        with open(annotations_file) as csv_file:
+        with open(cleaned_annotations_file) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=",")
             _ = next(csv_reader)  # Skip first row
             for row in csv_reader:
-                image_ids[row[2]].append(row[0])
+                if row[2] == "1":
+                    image_ids[row[1]].append(row[0])
         class_counts = {}
         class_ids = {}
         for key, value in image_ids.items():
@@ -79,6 +77,7 @@ class DataManager:
             if 6818 > count > 99:
                 possible_classes.append(im_class)
         self.eval_classes = np.random.choice(possible_classes, 200, False)
+        print("Selected 200 random classes for evaluation.")
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
 
@@ -92,13 +91,14 @@ class DataManager:
         We need to go through multiple files in the dataset files in order to
         get the FAISS indices for every class.
         """
+        print("Preparing data for chosen classes.")
         combined_ids = list(chain(*self.eval_class_ids.values()))
-        all_ids = self.get_csv_column(images_file, 0)
+        all_ids = get_csv_column(images_file, 0)
         all_id_dict = dict(zip(all_ids, range(len(all_ids))))
         intermed_indices = [all_id_dict[element] for element in combined_ids]
-        all_urls = self.get_csv_column(images_file, 2)
+        all_urls = get_csv_column(images_file, 2)
         needed_urls = [all_urls[index] for index in intermed_indices]
-        all_urls_ordered = list(get_image_uris_ordered())
+        all_urls_ordered = list(get_all_image_uris_ordered())
         all_url_dict = dict(
             zip(all_urls_ordered, range(len(all_urls_ordered)))
         )
@@ -116,7 +116,7 @@ class DataManager:
         :param all_indices: All indices for the evaluation classes
         """
         count = 0
-        for class_name, ids in self.eval_class_ids:
+        for class_name, ids in self.eval_class_ids.items():
             self.eval_class_indexes[class_name] = all_indices[
                 count : count + len(ids)
             ]
@@ -124,19 +124,16 @@ class DataManager:
         assert count == len(all_indices)
 
     @staticmethod
-    def get_csv_column(file_name: str, column: int = 0):
+    def first_time_setup():
         """
-        This function gets one column from an arbitrary csv file
-        :param file_name: The name of the csv file
-        :param column: The column index
-        :return: List of the entries in the column
+        This function is only executed once when first running the code.
+        It sets up all the required files and creates the faiss index.
+        :return:
         """
-        column_list = (
-            pd.read_csv(file_name, sep=",", header=0, usecols=[column])
-            .values.reshape((-1,))
-            .tolist()
-        )
-        return column_list
+        print("First time setup required. Starting.")
+        uri_set = cleanup_annotations()
+        _ = FaissIndex(uri_set=uri_set)
+        print("First time setup finished.")
 
 
 if __name__ == "__main__":

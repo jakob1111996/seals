@@ -1,4 +1,5 @@
 # This file implements the FAISS similarity search functionality
+import csv
 import glob
 import os
 
@@ -6,6 +7,8 @@ import faiss
 import numpy as np
 import pyarrow.parquet as pq
 from alive_progress import alive_bar
+
+from definitions import cleaned_uri_file
 
 data_folder = "data/saved_embeddings/train"
 
@@ -16,10 +19,11 @@ class FaissIndex:
     which is used as a k-Nearest-Neighbors implementation.
     """
 
-    def __init__(self, n_bits: int = 32):
+    def __init__(self, n_bits: int = 32, uri_set: set = None):
         """
         Constructor for the FaissIndex class
         :param n_bits: The number of bits used for the LSH hashes
+        :param uri_set: Set of URIs that are allowed for the index creation
         """
         self.embedding_dim = 256
         self.n_bits = n_bits
@@ -28,7 +32,13 @@ class FaissIndex:
         if os.path.exists(self.index_file_name):
             self.load_index()
         else:
-            self.generate_index()
+            if not uri_set:
+                raise RuntimeError(
+                    "FaissIndex should have been created by the "
+                    "first time setup run. Please re-run the "
+                    "initial setup (see DataManager class)."
+                )
+            self.generate_index(uri_set)
 
     def add_data_to_index(self, data):
         """
@@ -39,16 +49,19 @@ class FaissIndex:
         features = np.ascontiguousarray(np.asarray(data, "float32"))
         self.index.add(features)
 
-    def generate_index(self):
+    def generate_index(self, uri_set: set):
         """
         This method reads all the data and adds it to the IndexLSH object.
+        Apart from that, it creates all other data files that are required
+        by the SEALS algorithm later.
         """
         mm = np.memmap(
             "data/embeddings.bin",
             dtype="float32",
             mode="w+",
-            shape=(8121242, 256),
+            shape=(len(uri_set), 256),
         )
+        image_uris = np.empty((0,))
         line = 0
         with alive_bar(
             len(glob.glob(os.path.join(data_folder, "*.parquet.gzip"))),
@@ -56,13 +69,26 @@ class FaissIndex:
             force_tty=True,
         ) as bar:
             for file in glob.glob(os.path.join(data_folder, "*.parquet.gzip")):
-                data = pq.read_table(file)
-                data = np.stack(np.array(data[0].to_numpy()), axis=0)
+                raw_data = pq.read_table(file)
+                data = np.stack(np.array(raw_data[0].to_numpy()), axis=0)
+                uris = np.stack(np.array(raw_data[1].to_numpy()), axis=0)
+                image_uris = np.concatenate(
+                    [image_uris, np.array(raw_data[1].to_numpy())], axis=0
+                )
+                drop_lines = []
+                for index, uri in enumerate(uris):
+                    if uri not in uri_set:
+                        drop_lines.append(index)
+                data = np.delete(data, drop_lines, 0)
                 mm[line : line + data.shape[0], :] = data
                 mm.flush()
                 line += data.shape[0]
                 self.add_data_to_index(data)
                 bar()
+        with open(cleaned_uri_file, "w", newline="") as clean_file:
+            writer = csv.writer(clean_file, delimiter=",")
+            for uri in image_uris:
+                writer.writerow([uri])
         self.save_index()
 
     def save_index(self, file_name: str = "data/faiss.index"):
@@ -80,10 +106,10 @@ class FaissIndex:
         self.index = faiss.read_index(file_name)
 
 
-def get_image_uris_ordered():
+def get_all_image_uris_ordered() -> np.ndarray:
     """
     Get all the image URIs ordered the same way as the corresponding
-    embeddings in the FAISS Index.
+    embeddings in the saved_embeddings files.
     :return: Array of image URIs
     """
     image_uris = np.empty((0,))
