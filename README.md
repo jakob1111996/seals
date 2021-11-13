@@ -7,7 +7,7 @@ The goal is to recreate Figure 1b in the paper using MaxEnt-SEALS.
 I recommend setting up a new conda environment.
 Install the package requirements:
 ```python
-conda install -c pytorch faiss-gpu pip
+conda install -c pytorch faiss-cpu pip
 pip install -r requirements.txt
 ```
 

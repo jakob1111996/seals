@@ -72,21 +72,21 @@ class FaissIndex:
                 raw_data = pq.read_table(file)
                 data = np.stack(np.array(raw_data[0].to_numpy()), axis=0)
                 uris = np.stack(np.array(raw_data[1].to_numpy()), axis=0)
-                image_uris = np.concatenate(
-                    [image_uris, np.array(raw_data[1].to_numpy())], axis=0
-                )
                 drop_lines = []
                 for index, uri in enumerate(uris):
                     if uri not in uri_set:
                         drop_lines.append(index)
                 data = np.delete(data, drop_lines, 0)
                 mm[line : line + data.shape[0], :] = data
+                uris = np.delete(uris, drop_lines, 0)
+                image_uris = np.concatenate([image_uris, uris], axis=0)
                 mm.flush()
                 line += data.shape[0]
                 self.add_data_to_index(data)
                 bar()
         with open(cleaned_uri_file, "w", newline="") as clean_file:
             writer = csv.writer(clean_file, delimiter=",")
+            writer.writerow(["imageURI"])
             for uri in image_uris:
                 writer.writerow([uri])
         self.save_index()

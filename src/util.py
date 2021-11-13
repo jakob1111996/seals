@@ -1,13 +1,10 @@
+# This file contains some utility functions required by several other files.
 import csv
 
 import pandas as pd
 
-from src.definitions import (
-    annotations_file,
-    cleaned_annotations_file,
-    images_file,
-)
-from src.faiss_searcher import get_all_image_uris_ordered
+from definitions import annotations_file, cleaned_annotations_file, images_file
+from faiss_searcher import get_all_image_uris_ordered
 
 
 def get_csv_column(file_name: str, column: int = 0):
@@ -54,6 +51,7 @@ def cleanup_annotations():
             reader = csv.reader(raw_file, delimiter=",")
             writer = csv.writer(clean_file, delimiter=",")
             _ = next(reader)  # Skip first row
+            writer.writerow(["imageID", "class", "confidence"])
             for row in reader:
                 if row[0] in id_set:
                     writer.writerow([row[0], row[2], row[3]])

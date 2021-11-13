@@ -2,6 +2,7 @@
 import csv
 import os
 from itertools import chain
+from typing import Iterable, Union
 
 import numpy as np
 
@@ -31,16 +32,24 @@ class DataManager:
         Constructor for the data reader class.
         :param faiss_index: The FaissIndex class
         """
+        self.num_embeddings = 6_607_906
         self.eval_classes = None
         self.eval_class_ids = {}
-        self.eval_class_indexes = {}
+        self.eval_class_indices = {}
         if not os.path.exists(cleaned_annotations_file):
             self.first_time_setup()
         self.choose_eval_classes()
-        self.determine_indices_per_class()
+        self.determine_faiss_indices_per_class()
         print("Data Setup completed successfully!")
+        self.embedding_mm = np.memmap(
+            "data/embeddings.bin",
+            dtype="float32",
+            mode="r",
+            shape=(self.num_embeddings, 256),
+        )
 
-    def get_positives_for_classes(self):
+    @staticmethod
+    def get_positives_for_classes():
         """
         Determine the number of positive examples for each class in the dataset
         and the ids of images associated with each class.
@@ -81,12 +90,12 @@ class DataManager:
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
 
-    def determine_indices_per_class(self):
+    def determine_faiss_indices_per_class(self):
         """
         This function determines the indices that the evaluated classes have
         in the Faiss IndexLSH object. This is required to find the embeddings
         for the seed set and to be able to quickly get labels.
-        The results are stored in the eval_class_indexes dictionary in the
+        The results are stored in the eval_class_indices dictionary in the
         instance of this class.
         We need to go through multiple files in the dataset files in order to
         get the FAISS indices for every class.
@@ -112,12 +121,12 @@ class DataManager:
         Split all the indices that are determined by the
         determine_indices_per_class method into the separate classes
         analogous to the eval_class_ids dictionary.
-        The results are stored in the eval_class_indexes class member.
+        The results are stored in the eval_class_indices class member.
         :param all_indices: All indices for the evaluation classes
         """
         count = 0
         for class_name, ids in self.eval_class_ids.items():
-            self.eval_class_indexes[class_name] = all_indices[
+            self.eval_class_indices[class_name] = all_indices[
                 count : count + len(ids)
             ]
             count += len(ids)
@@ -134,6 +143,14 @@ class DataManager:
         uri_set = cleanup_annotations()
         _ = FaissIndex(uri_set=uri_set)
         print("First time setup finished.")
+
+    def get_embedding(self, index: Union[int, Iterable[int]]) -> np.ndarray:
+        """
+        Get one embedding from the embedding memmap.
+        :param index: The index or indices of the embedding in the faiss index.
+        :return: ndarray of shape (n, 256) containing the embedding
+        """
+        return self.embedding_mm[index, :]
 
 
 if __name__ == "__main__":
