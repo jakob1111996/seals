@@ -1,5 +1,6 @@
 # This file implements the SEALS algorithm logic
 from data_reader import DataManager
+
 from faiss_searcher import FaissIndex
 
 
