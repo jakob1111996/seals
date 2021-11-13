@@ -1,5 +1,5 @@
 # This file implements the SEALS algorithm logic
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -39,16 +39,17 @@ class SEALSAlgorithm:
         :return: Scores for this run
         """
         scores = {}
-        _ = self.get_seed_set(eval_class)
+        labeled_set, indices = self.get_seed_set(eval_class)
         return scores
 
-    def get_seed_set(self, eval_class: str) -> LabeledSet:
+    def get_seed_set(self, eval_class: str) -> Tuple[LabeledSet, List]:
         """
         This function generates a seed set for a given class string.
         The seed set contains of the embeddings and labels for 5 positive and
         95 negative examples.
         :param eval_class: String that identifies the class to be used.
-        :return: LabeledSet object with 5 pos and 95 neg examples
+        :return: Tuple of LabeledSet object with 5 pos and 95 neg examples
+            and List with the indices of the seed set.
         """
         seed_set = LabeledSet()
         positive_indices = self.data_manager.eval_class_indices[eval_class]
@@ -61,4 +62,4 @@ class SEALSAlgorithm:
             selected_positives + selected_negatives
         )
         seed_set.add_data(embeddings, np.array([1] * 5 + [0] * 95))
-        return seed_set
+        return seed_set, selected_positives + selected_negatives
