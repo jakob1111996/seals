@@ -1,1 +1,5 @@
 pre-commit
+pyarrow
+alive-progress
+pytest
+pandas
