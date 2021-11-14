@@ -12,10 +12,6 @@ class BaseClassifier(ABC):
     This is the base class (interface) all classifiers should inherit from
     """
 
-    def __init__(self):
-        self.train_time = 0
-        self.predict_time = 0
-
     @abstractmethod
     def train(self, labeled_data: LabeledSet) -> None:
         """
@@ -43,7 +39,7 @@ class LogisticRegressionClassifier(BaseClassifier):
         Initialize the classifier
         """
         super().__init__()
-        self.clf = LogisticRegression()
+        self.clf = LogisticRegression(max_iter=1000)
 
     def train(self, labeled_data: LabeledSet) -> None:
         """
@@ -51,11 +47,8 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labeled_data: The labeled dataset to train on.
         """
         X, y = labeled_data.get_data()
-        import time
-
-        start = time.time()
+        self.clf = LogisticRegression(max_iter=1000)
         self.clf.fit(X, y)
-        self.train_time += time.time() - start
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -63,9 +56,5 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param X: The embeddings to make predictions for
         :return: Tuple with (predictions, confidence)
         """
-        import time
-
-        start = time.time()
         pred, prob = self.clf.predict(X), self.clf.predict_proba(X)
-        self.predict_time += time.time() - start
         return pred, prob

@@ -88,8 +88,13 @@ class DataManager:
             cleaned_train_annotations_file
         )
         possible_classes = []
+        test_counts, test_ids = self.get_positives_for_classes(
+            cleaned_test_annotations_file
+        )
         for im_class, count in class_counts.items():
-            if 6818 > count > 99:
+            # We only consider classes with between 100 and 6817 training
+            # examples and at least 50 positive test samples for evaluation!
+            if 6818 > count > 99 and test_counts[im_class] > 50:
                 possible_classes.append(im_class)
         self.eval_classes = np.random.choice(
             possible_classes, class_count, False

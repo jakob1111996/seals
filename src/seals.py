@@ -3,7 +3,11 @@ from typing import Dict, Tuple
 
 import numpy as np
 from alive_progress import alive_bar
-from sklearn.metrics import average_precision_score, precision_recall_curve
+from sklearn.metrics import (
+    average_precision_score,
+    precision_score,
+    recall_score,
+)
 
 from src.classifier import BaseClassifier
 from src.data_manager import DataManager
@@ -76,9 +80,6 @@ class SEALSAlgorithm:
                 self.add_element_to_set(eval_class)
         self.classifier.train(self.labeled_set)
         scores = self.compute_scores(test_data, scores)
-        print(f"Faiss search time: {self.faiss_index.search_time}")
-        print(f"Train time: {self.classifier.train_time}")
-        print(f"Predict time: {self.classifier.predict_time}")
         return scores
 
     def add_element_to_set(self, eval_class: str) -> None:
@@ -146,10 +147,11 @@ class SEALSAlgorithm:
         :return: The scores dictionary with the appended scores
         """
         predictions, probabilities = self.classifier.predict(test_data[0])
-        precision, recall, _ = precision_recall_curve(
-            test_data[1], predictions
+        precision = precision_score(test_data[1], predictions)
+        recall = recall_score(test_data[1], predictions)
+        average_precision = average_precision_score(
+            test_data[1], probabilities[:, 1]
         )
-        average_precision = average_precision_score(test_data[1], predictions)
         scores["precision"].append(precision)
         scores["recall"].append(recall)
         scores["average_precision"].append(average_precision)

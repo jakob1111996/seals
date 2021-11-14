@@ -42,8 +42,10 @@ class MaxEntropySelectionStrategy(BaseSelectionStrategy):
             2: The embedding of the selected element
         """
         _, prob = classifier.predict(pool.get_all()[0])
-        entropies = prob[:, 0] * np.log(prob[:, 0])
-        pool_index = int(np.argmax(entropies))
+        entropies = prob[:, 1] * np.log(prob[:, 1]) + prob[:, 0] * np.log(
+            prob[:, 0]
+        )
+        pool_index = int(np.argmax(-entropies))
         return (
             pool_index,
             pool.indices[pool_index],
