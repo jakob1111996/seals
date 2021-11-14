@@ -24,6 +24,7 @@ class FaissIndex:
         :param n_bits: The number of bits used for the LSH hashes
         :param uri_set: Set of URIs that are allowed for the index creation
         """
+        self.search_time = 0
         self.embedding_dim = 256
         self.n_bits = n_bits
         self.index = faiss.IndexLSH(self.embedding_dim, n_bits)
@@ -50,8 +51,21 @@ class FaissIndex:
         features = np.ascontiguousarray(np.asarray(data, "float32"))
         self.index.add(features)
 
-    def search(self, data: np.ndarray, k: int = 100):
-        d, i = self.index.search(data, k)
+    def search(self, data: np.ndarray, k: int = 100) -> np.ndarray:
+        """
+        Search through the index and return the k nearest neighbors of the
+        search data in the index.
+        :param data: The data to search for in shape (n, 256)
+        :param k: The number of nearest neighbors to return for each sample
+        :return: Array of indices of the nearest neighbors, shape (n*k,)
+        """
+        import time
+
+        start = time.time()
+        features = np.ascontiguousarray(np.asarray(data, "float32"))
+        _, indices = self.index.search(features, k)
+        self.search_time += time.time() - start
+        return indices.reshape((-1,))
 
     def read_embeddings(
         self,

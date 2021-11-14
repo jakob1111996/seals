@@ -3,3 +3,4 @@ pyarrow
 alive-progress
 pytest
 pandas
+scikit-learn

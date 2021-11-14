@@ -27,18 +27,20 @@ class DataManager:
             oidv6-train-images-with-labels-with-rotation.csv
     """
 
-    def __init__(self):
+    def __init__(self, num_classes: int = 10):
         """
         Constructor for the data reader class.
+        :param num_classes: The number of evaluation classes
         """
         self.num_embeddings = 6_607_906
         self.num_test_embeddings = 113_508
+        self.num_classes = num_classes
         self.eval_classes = None
         self.eval_class_ids = {}
         self.eval_class_indices = {}
         if not os.path.exists(cleaned_train_annotations_file):
             self.first_time_setup()
-        self.choose_eval_classes()
+        self.choose_eval_classes(num_classes)
         self.get_indices_for_positives()
         print("Data Setup completed successfully!")
         self.embedding_mm = np.memmap(
@@ -75,13 +77,13 @@ class DataManager:
             class_ids[key] = np.unique(value)
         return class_counts, class_ids
 
-    def choose_eval_classes(self) -> None:
+    def choose_eval_classes(self, class_count: int = 10) -> None:
         """
         This method chooses 200 classes with between 100 to 6,817 positive
         training examples which are then used for the SEALS algorithm.
         The classes are then stored in the data reader instance.
         """
-        print("Selecting 200 random classes for evaluation.")
+        print(f"Selecting {class_count} random classes for evaluation.")
         class_counts, class_ids = self.get_positives_for_classes(
             cleaned_train_annotations_file
         )
@@ -89,7 +91,9 @@ class DataManager:
         for im_class, count in class_counts.items():
             if 6818 > count > 99:
                 possible_classes.append(im_class)
-        self.eval_classes = np.random.choice(possible_classes, 200, False)
+        self.eval_classes = np.random.choice(
+            possible_classes, class_count, False
+        )
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
 
