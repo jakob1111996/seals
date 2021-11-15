@@ -18,6 +18,14 @@ class Plotter:
         data = np.asarray(data)
         x = range(100, 2001, 100)
         ax.plot(x, np.mean(data, axis=0), marker="o", markersize=3)
+        std = np.std(data, axis=0)
+        ax.fill_between(
+            x,
+            (np.mean(data, axis=0) - std),
+            (np.mean(data, axis=0) + std),
+            color="b",
+            alpha=0.1,
+        )
         ax.set_ylabel(title)
         ax.set_xlabel("Number of Labels")
 
