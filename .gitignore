@@ -1,6 +1,8 @@
 # Project
 .idea
-data
+!data
+data/*
+!data/used_classes.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
