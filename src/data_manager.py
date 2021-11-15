@@ -77,11 +77,16 @@ class DataManager:
             class_ids[key] = np.unique(value)
         return class_counts, class_ids
 
-    def choose_eval_classes(self, class_count: int = 10) -> None:
+    def choose_eval_classes(
+        self, class_count: int = 10, random: bool = False
+    ) -> None:
         """
         This method chooses 200 classes with between 100 to 6,817 positive
         training examples which are then used for the SEALS algorithm.
         The classes are then stored in the data reader instance.
+        :param class_count: The number of classes that shall be evaluated
+        :param random: Select random classes for evaluation or use the
+            predefined ones from the SEALS paper
         """
         print(f"Selecting {class_count} random classes for evaluation.")
         class_counts, class_ids = self.get_positives_for_classes(
@@ -91,14 +96,18 @@ class DataManager:
         test_counts, test_ids = self.get_positives_for_classes(
             cleaned_test_annotations_file
         )
-        for im_class, count in class_counts.items():
-            # We only consider classes with between 100 and 6817 training
-            # examples and at least 50 positive test samples for evaluation!
-            if 6818 > count > 99 and test_counts[im_class] > 50:
-                possible_classes.append(im_class)
-        self.eval_classes = np.random.choice(
-            possible_classes, class_count, False
-        )
+        if random:
+            for im_class, count in class_counts.items():
+                # We only consider classes with between 100 and 6817 training
+                # examples and at least 50 positive test samples for evaluation
+                if 6818 > count > 99 and test_counts[im_class] > 50:
+                    possible_classes.append(im_class)
+            self.eval_classes = np.random.choice(
+                possible_classes, class_count, False
+            )
+        else:
+            self.eval_classes = self.read_classes_from_file()[:class_count]
+
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
 
@@ -216,6 +225,18 @@ class DataManager:
         labels = np.zeros((embeddings.shape[0],))
         labels[positive_indices] = 1
         return embeddings, labels
+
+    @staticmethod
+    def read_classes_from_file(file_path: str = "data/used_classes.csv"):
+        class_names = get_csv_column(file_path, 0)
+        class_dict = {}
+        with open(classes_file) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=",")
+            _ = next(csv_reader)  # Skip first row
+            for row in csv_reader:
+                class_dict[row[1]] = row[0]
+        class_ids = [class_dict[class_name] for class_name in class_names]
+        return class_ids
 
 
 if __name__ == "__main__":

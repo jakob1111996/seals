@@ -69,6 +69,7 @@ class SEALSAlgorithm:
             "recall": [],
             "pool_size": [],
             "average_precision": [],
+            "positives": [],
         }
         self.pool = DataPool()
         self.labeled_set = self.get_seed_set(eval_class)
@@ -156,4 +157,5 @@ class SEALSAlgorithm:
         scores["recall"].append(recall)
         scores["average_precision"].append(average_precision)
         scores["pool_size"].append(len(self.pool.indices))
+        scores["positives"].append(np.sum(self.labeled_set.y))
         return scores

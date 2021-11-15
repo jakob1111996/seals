@@ -4,3 +4,4 @@ alive-progress
 pytest
 pandas
 scikit-learn
+matplotlib
