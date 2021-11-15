@@ -27,8 +27,11 @@ class SEALSAlgorithm:
         classifier: BaseClassifier,
         selection: BaseSelectionStrategy,
         num_classes: int = 10,
+        random_classes: bool = False,
     ):
-        self.data_manager = DataManager(num_classes)
+        self.data_manager = DataManager(
+            num_classes, random_classes=random_classes
+        )
         self.faiss_index = FaissIndex()
         self.pool = DataPool()
         self.labeled_set = LabeledSet()

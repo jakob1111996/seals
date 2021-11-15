@@ -27,7 +27,7 @@ class DataManager:
             oidv6-train-images-with-labels-with-rotation.csv
     """
 
-    def __init__(self, num_classes: int = 10):
+    def __init__(self, num_classes: int = 10, random_classes: bool = False):
         """
         Constructor for the data reader class.
         :param num_classes: The number of evaluation classes
@@ -40,7 +40,7 @@ class DataManager:
         self.eval_class_indices = {}
         if not os.path.exists(cleaned_train_annotations_file):
             self.first_time_setup()
-        self.choose_eval_classes(num_classes)
+        self.choose_eval_classes(num_classes, random=random_classes)
         self.get_indices_for_positives()
         print("Data Setup completed successfully!")
         self.embedding_mm = np.memmap(
@@ -100,7 +100,7 @@ class DataManager:
             for im_class, count in class_counts.items():
                 # We only consider classes with between 100 and 6817 training
                 # examples and at least 50 positive test samples for evaluation
-                if 6818 > count > 99 and test_counts[im_class] > 50:
+                if 6818 > count > 99 and test_counts[im_class] > 10:
                     possible_classes.append(im_class)
             self.eval_classes = np.random.choice(
                 possible_classes, class_count, False

@@ -9,7 +9,9 @@ from src.selection_strategy import MaxEntropySelectionStrategy
 if __name__ == "__main__":
     classifier = LogisticRegressionClassifier()
     selection = MaxEntropySelectionStrategy()
-    seals = SEALSAlgorithm(classifier, selection, num_classes=10)
+    seals = SEALSAlgorithm(
+        classifier, selection, num_classes=10, random_classes=False
+    )
     scores = seals.run(repetitions=1)
 
     with open("data/results.json", "w") as fp:

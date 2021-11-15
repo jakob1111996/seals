@@ -23,11 +23,13 @@ class Plotter:
 
     @staticmethod
     def create_plots(scores: Dict):
-        fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(10, 3))
-        Plotter.create_plot(scores, axes[0], "mAP", "average_precision")
-        Plotter.create_plot(scores, axes[1], "Pool Size", "pool_size")
-        Plotter.create_plot(scores, axes[2], "Recall", "recall")
+        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
+        Plotter.create_plot(scores, axes[0][0], "mAP", "average_precision")
+        Plotter.create_plot(scores, axes[0][1], "Pool Size", "pool_size")
+        Plotter.create_plot(scores, axes[1][0], "Recall", "recall")
+        Plotter.create_plot(scores, axes[1][1], "Positives", "positives")
         plt.tight_layout()
+        plt.savefig("data/results.png")
         plt.show()
 
     @staticmethod

@@ -39,7 +39,7 @@ class LogisticRegressionClassifier(BaseClassifier):
         Initialize the classifier
         """
         super().__init__()
-        self.clf = LogisticRegression(max_iter=1000)
+        self.clf = None
 
     def train(self, labeled_data: LabeledSet) -> None:
         """
@@ -47,7 +47,7 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labeled_data: The labeled dataset to train on.
         """
         X, y = labeled_data.get_data()
-        self.clf = LogisticRegression(max_iter=1000)
+        self.clf = LogisticRegression(max_iter=1000, solver="saga")
         self.clf.fit(X, y)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
