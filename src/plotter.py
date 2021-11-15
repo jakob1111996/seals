@@ -18,7 +18,8 @@ class Plotter:
         data = np.asarray(data)
         x = range(100, 2001, 100)
         ax.plot(x, np.mean(data, axis=0), marker="o", markersize=3)
-        ax.set_title(title)
+        ax.set_ylabel(title)
+        ax.set_xlabel("Number of Labels")
 
     @staticmethod
     def create_plots(scores: Dict):
@@ -26,6 +27,7 @@ class Plotter:
         Plotter.create_plot(scores, axes[0], "mAP", "average_precision")
         Plotter.create_plot(scores, axes[1], "Pool Size", "pool_size")
         Plotter.create_plot(scores, axes[2], "Recall", "recall")
+        plt.tight_layout()
         plt.show()
 
     @staticmethod
