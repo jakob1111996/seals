@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import Tuple, Union
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from src.data_structures import DataPool
 class BaseSelectionStrategy(ABC):
     @abstractmethod
     def select_element(
-        self, classifier: BaseClassifier, pool: DataPool
+        self, classifier: BaseClassifier, pool: Union[DataPool, np.ndarray]
     ) -> Tuple[int, int, np.ndarray]:
         """
         Select an element from the pool according to the selection strategy.
@@ -30,7 +30,7 @@ class MaxEntropySelectionStrategy(BaseSelectionStrategy):
     """
 
     def select_element(
-        self, classifier: BaseClassifier, pool: DataPool
+        self, classifier: BaseClassifier, pool: Union[DataPool, np.ndarray]
     ) -> Tuple[int, int, np.ndarray]:
         """
         Select the element from the pool that has the maximum entropy.
@@ -41,7 +41,8 @@ class MaxEntropySelectionStrategy(BaseSelectionStrategy):
             1: The index of the selected element in the faiss index
             2: The embedding of the selected element
         """
-        _, prob = classifier.predict(pool.get_all()[0])
+        embeddings = pool.get_all()[0] if isinstance(pool, DataPool) else pool
+        _, prob = classifier.predict(embeddings)
         entropies = prob[:, 1] * np.log(prob[:, 1]) + prob[:, 0] * np.log(
             prob[:, 0]
         )

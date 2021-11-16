@@ -34,11 +34,16 @@ class LogisticRegressionClassifier(BaseClassifier):
     Logistic Regression classifier wrapping sklearn LogisticRegression
     """
 
-    def __init__(self):
+    def __init__(
+        self, solver: str = "saga", verbose: int = 0, max_iter: int = 1000
+    ):
         """
         Initialize the classifier
         """
         super().__init__()
+        self.solver = solver
+        self.verbose = verbose
+        self.max_iter = max_iter
         self.clf = None
 
     def train(self, labeled_data: LabeledSet) -> None:
@@ -47,7 +52,9 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labeled_data: The labeled dataset to train on.
         """
         X, y = labeled_data.get_data()
-        self.clf = LogisticRegression(max_iter=1000, solver="saga")
+        self.clf = LogisticRegression(
+            max_iter=self.max_iter, solver=self.solver, verbose=self.verbose
+        )
         self.clf.fit(X, y)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
