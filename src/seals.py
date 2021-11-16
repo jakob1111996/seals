@@ -20,7 +20,7 @@ from src.selection_strategy import BaseSelectionStrategy
 class SEALSAlgorithm:
     """
     This class implements the main logic behind the SEALS algorithm.
-    It combines everything and runs the experiments
+    It combines everything and runs all the experiments.
     """
 
     def __init__(
@@ -30,7 +30,17 @@ class SEALSAlgorithm:
         num_classes: int = 10,
         random_classes: bool = False,
         baseline_algorithms: List[BaseBaselineALgorithm] = None,
-    ):
+    ) -> None:
+        """
+        Initialize an instance of the SEALS algorithm
+        :param classifier: The classifier to use for SEALS
+        :param selection: The selection strategy to use
+        :param num_classes: The number of classes to evaluate
+        :param random_classes: Evaluate random classes (True) or the classes
+            from the paper (False)
+        :param baseline_algorithms: List of baselines to include in the
+            experiment
+        """
         self.data_manager = DataManager(
             num_classes, random_classes=random_classes
         )
@@ -170,7 +180,7 @@ class SEALSAlgorithm:
         scores["positives"].append(np.sum(self.labeled_set.y))
         return scores
 
-    def initialize_baselines(self, eval_class: str, test_data: Tuple):
+    def initialize_baselines(self, eval_class: str, test_data: Tuple) -> None:
         """
         This function initializes the baseline algorithms in every run of SEALS
         """
@@ -183,7 +193,7 @@ class SEALSAlgorithm:
                 test_data,
             )
 
-    def update_baselines(self):
+    def update_baselines(self) -> None:
         """
         This function updates the baseline algorithms in every batch iteration
         """

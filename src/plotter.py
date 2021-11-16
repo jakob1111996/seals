@@ -1,3 +1,4 @@
+# This file implements the plotting functionality to recreate the plot.
 import json
 from typing import Dict, List
 
@@ -7,13 +8,22 @@ import numpy as np
 
 class Plotter:
     """
-    Class that handles all the plotting.
+    Class that handles all the plotting. All methods are static.
     """
 
     @staticmethod
     def create_plot(
         scores: Dict, ax: plt.axis, title: str, key: str, colors: List[str]
-    ):
+    ) -> None:
+        """
+        This function creates a plot with all required lines and confidence
+        intervals on one axis of the figure.
+        :param scores: The scores dictionary to get the scores from.
+        :param ax: The ax used for the plotting
+        :param title: The title used for the y label of the plot
+        :param key: The score name we are plotting in this plot
+        :param colors: A list of colors to use for the plot
+        """
         data = []
         for class_name, class_scores in scores.items():
             data.append(class_scores[key])
@@ -43,6 +53,11 @@ class Plotter:
 
     @staticmethod
     def create_plots(scores: Dict):
+        """
+        This function creates the plot with all subplots from a given scores
+        dictionary
+        :param scores: The dictionary with all the scores of the runs.
+        """
         colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
         Plotter.create_plot(
@@ -63,6 +78,19 @@ class Plotter:
     def add_baseline_data(
         data: np.ndarray, stds: np.ndarray, scores: Dict, key: str
     ):
+        """
+        This function extracts the scores from the baseline algorithms
+        for plotting them later on.
+        :param data: The SEALS data ready for plotting in an array
+        :param stds: The SEALS standard deviation ready for plotting
+        :param scores: The scores dictionary
+        :param key: The name of the score to extract right now.
+        :return: Tuple with three elements:
+            0: The SEALS data concatenated with the baseline data for plotting
+                in shape (20, 1 + n_baselines)
+            1: The SEALS stdd concatenated with the baseline stdds
+            2: The labels of SEALS and the baselines for the legend.
+        """
         labels = ["MaxEnt-SEALS"]
 
         baseline_data = {}
@@ -88,6 +116,11 @@ class Plotter:
 
     @staticmethod
     def create_plots_from_file(file_path: str):
+        """
+        This function reads the scores dictionary from a json file and then
+        calls the main plotting function to create the plot.
+        :param file_path: The path to the scores json file.
+        """
         with open(file_path, "r") as file:
             data = json.load(file)
         Plotter.create_plots(data)

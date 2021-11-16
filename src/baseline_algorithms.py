@@ -1,3 +1,4 @@
+# This file implements several baseline algorithms to use for comparison.
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple
 
@@ -19,7 +20,7 @@ class BaseBaselineALgorithm(ABC):
     This is the base class for all baseline approaches to run alongside SEALS
     """
 
-    def __init__(self, name: str = "base"):
+    def __init__(self, name: str = "base") -> None:
         """
         Initialize the baseline algotithm
         :param name: The name of the baseline
@@ -47,7 +48,7 @@ class BaseBaselineALgorithm(ABC):
         eval_class: str,
         test_data: Tuple,
         batch_size: int = 100,
-    ):
+    ) -> None:
         """
         Initialize the baseline algorithm with the same labeled set as SEALS
         :param initial_set: The labeled seed set to copy the values from
@@ -68,7 +69,7 @@ class BaseBaselineALgorithm(ABC):
         self.new_class = True
 
     @abstractmethod
-    def iteration(self):
+    def iteration(self) -> None:
         """
         This function is called in every iteration of SEALS to get the baseline
         scores. This must be implemented in every derived class!
@@ -76,6 +77,11 @@ class BaseBaselineALgorithm(ABC):
         raise NotImplementedError()
 
     def finish_run(self) -> Dict[str, List]:
+        """
+        This function is called when a run is finished and resets and returns
+        the scores for the finished run.
+        :return: Dictionary of scores for the finished run
+        """
         scores = self.scores.copy()
         self.scores = {
             "precision": [],
@@ -87,26 +93,32 @@ class BaseBaselineALgorithm(ABC):
         return scores
 
 
-class MaxEntAllBaseline(BaseBaselineALgorithm):
+class AllBaseline(BaseBaselineALgorithm):
     """
-    The MaxEnt-All baseline that uses Maximum Entropy as a selecion strategy
-    but searches all data points and does not restrict the candidate pool like
-    MaxEnt-SEALS does.
+    This class implements the base class for all baselines that work
+    like SEALS but don't restrict the candidate pool. For example,
+    MaxEnt-All works like MaxEnt-SEALS but does not restrict the candidate
+    pool.
     """
 
-    def __init__(self):
-        super().__init__("MaxEnt-All")
+    def __init__(self, name: str) -> None:
+        """
+        Initialize the All samples baseline instance
+        """
+        super().__init__(name)
         self.classifier = LogisticRegressionClassifier()
 
-    def iteration(self):
+    def iteration(self) -> None:
         """
-        Run one iteration of the MaxEnt-All baseline
+        Run one iteration of the MaxEnt-All baseline.
+        Trains the classifier, computes scores and adds elements with maximum
+        entropy to the labeled training set.
         """
         self.classifier.train(self.labeled_set)
         self.compute_scores(self.test_data)
         self.add_elements_to_set(self.eval_class)
 
-    def compute_scores(self, test_data: Tuple):
+    def compute_scores(self, test_data: Tuple) -> None:
         """
         This function computes the scores required for plotting later.
         The scores we need are: precision, recall, pool_size
@@ -123,13 +135,36 @@ class MaxEntAllBaseline(BaseBaselineALgorithm):
         self.scores["average_precision"].append(average_precision)
         self.scores["positives"].append(np.sum(self.labeled_set.y))
 
+    @abstractmethod
+    def add_elements_to_set(self, eval_class: str) -> None:
+        """
+        Abstract class method that needs to be implemented by derived classes.
+        This method should choose data points from all training data and
+        add the chosen points to the labeled training set.
+        :param eval_class: The class that is currently evaluated.
+        """
+        raise NotImplementedError()
+
+
+class MaxEntAllBaseline(AllBaseline):
+    """
+    The MaxEnt-All baseline that uses Maximum Entropy as a selecion strategy
+    but searches all data points and does not restrict the candidate pool like
+    MaxEnt-SEALS does.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize the MaxEnt-All baseline instance
+        """
+        super().__init__("MaxEnt-All")
+
     def add_elements_to_set(self, eval_class: str) -> None:
         """
         This function handles the inner loop of the algorithm.
         It selects batch_size elements according to the max entropy, then
-        adds it to the labeled set and removes it from the data pool.
-        It also adds the k nearest neighbors of the removed element to the pool
-        :param eval_class: The class we are evaluating currently
+        adds them to the labeled set.
+        :param eval_class: The class we are evaluating currently.
         """
         embeddings = np.array(self.data_manager.embedding_mm)
         _, prob = self.classifier.predict(embeddings)
@@ -139,6 +174,7 @@ class MaxEntAllBaseline(BaseBaselineALgorithm):
         entropy_orders = np.argsort(entropies)  # Max entropy
         count = 0
         index = 0
+        # Use the 100 elements with the highest entropy that are not in the set
         while count < self.batch_size:
             if entropy_orders[index] not in self.labeled_set.indices:
                 label = (
@@ -159,48 +195,24 @@ class MaxEntAllBaseline(BaseBaselineALgorithm):
             index += 1
 
 
-class RandomAllBaseline(BaseBaselineALgorithm):
+class RandomAllBaseline(AllBaseline):
     """
-    The Random-All baseline that uses Maximum Entropy as a selecion strategy
-    but searches all data points and does not restrict the candidate pool like
-    MaxEnt-SEALS does.
+    The Random-All baseline that uses a random selection strategy
+    and searches all data points and does not restrict the candidate pool like
+    SEALS does.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize the Random-All baseline algorithm
+        """
         super().__init__("Random-All")
-        self.classifier = LogisticRegressionClassifier()
-
-    def iteration(self):
-        """
-        Run one iteration of the MaxEnt-All baseline
-        """
-        self.classifier.train(self.labeled_set)
-        self.compute_scores(self.test_data)
-        self.add_elements_to_set(self.eval_class)
-
-    def compute_scores(self, test_data: Tuple):
-        """
-        This function computes the scores required for plotting later.
-        The scores we need are: precision, recall, pool_size
-        :param test_data: The test data required to compute the scores
-        """
-        predictions, probabilities = self.classifier.predict(test_data[0])
-        precision = precision_score(test_data[1], predictions)
-        recall = recall_score(test_data[1], predictions)
-        average_precision = average_precision_score(
-            test_data[1], probabilities[:, 1]
-        )
-        self.scores["precision"].append(precision)
-        self.scores["recall"].append(recall)
-        self.scores["average_precision"].append(average_precision)
-        self.scores["positives"].append(np.sum(self.labeled_set.y))
 
     def add_elements_to_set(self, eval_class: str) -> None:
         """
         This function handles the inner loop of the algorithm.
-        It selects batch_size elements according to the max entropy, then
-        adds it to the labeled set and removes it from the data pool.
-        It also adds the k nearest neighbors of the removed element to the pool
+        It selects batch_size elements randomly, then
+        adds them to the labeled set.
         :param eval_class: The class we are evaluating currently
         """
         count = 0
@@ -229,12 +241,15 @@ class FullSupervisionBaseline(BaseBaselineALgorithm):
     The Full Supervision baseline uses all labeled points as training data.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """
+        Initialize the full supervision baseline algorithm
+        """
         super().__init__("FullSupervision")
-        self.classifier = LogisticRegressionClassifier(solver="lbfgs")
+        self.classifier = LogisticRegressionClassifier()
         self.scores = {"precision": [], "recall": [], "average_precision": []}
 
-    def iteration(self):
+    def iteration(self) -> None:
         """
         Run one iteration of the MaxEnt-All baseline
         """
@@ -249,7 +264,7 @@ class FullSupervisionBaseline(BaseBaselineALgorithm):
             self.compute_scores(self.test_data)
             self.new_class = False
 
-    def compute_scores(self, test_data: Tuple):
+    def compute_scores(self, test_data: Tuple) -> None:
         """
         This function computes the scores required for plotting later.
         The scores we need are: precision, recall, pool_size

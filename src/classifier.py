@@ -1,3 +1,4 @@
+# This file implements the classifiers used for evaluation.
 from abc import ABC, abstractmethod
 from typing import Tuple
 
@@ -36,7 +37,7 @@ class LogisticRegressionClassifier(BaseClassifier):
 
     def __init__(
         self, solver: str = "saga", verbose: int = 0, max_iter: int = 1000
-    ):
+    ) -> None:
         """
         Initialize the classifier
         """

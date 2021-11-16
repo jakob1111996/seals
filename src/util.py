@@ -46,6 +46,12 @@ def cleanup_annotations(
     Problematically, not all images that are in the human image labels are
     still available on flickr and in the embeddings. Therefore, we need to
     clean the human image annotations and create a cleaned file once.
+    :param data_folder: The folder to read the embeddings from
+    :param images_file: The file to read the image URIs and IDs from
+    :param cleaned_annotations_file: The file path to write the cleaned
+        annotations to
+    :param annotations_file: The file with the uncleaned annotations
+    :return: Set of all valid URIs
     """
     cleaned_uris = get_all_image_uris_ordered(data_folder)
     all_uris = get_csv_column(images_file, 2)
@@ -82,6 +88,7 @@ def get_all_image_uris_ordered(data_folder: str) -> np.ndarray:
     Get all the image URIs ordered the same way as the corresponding
     embeddings in the saved_embeddings files. The returned URIs contain
     some URIs which are not labeled or don not exist in the metadata.
+    :param data_folder: The folder to read all the URIs from.
     :return: Array of image URIs
     """
     image_uris = np.empty((0,))

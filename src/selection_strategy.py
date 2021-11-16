@@ -1,3 +1,4 @@
+# This file implements all the selection strategies that are used
 from abc import ABC, abstractmethod
 from typing import Tuple, Union
 
@@ -8,6 +9,10 @@ from src.data_structures import DataPool
 
 
 class BaseSelectionStrategy(ABC):
+    """
+    This class is the interface all selection strategies need to inherit from
+    """
+
     @abstractmethod
     def select_element(
         self, classifier: BaseClassifier, pool: Union[DataPool, np.ndarray]

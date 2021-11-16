@@ -5,6 +5,11 @@ import numpy as np
 
 
 class LabeledSet:
+    """
+    The labeled set class contains embeddings and labels and is used
+    as a training dataset.
+    """
+
     def __init__(self, embedding_size: int = 256):
         """
         Construct an empty labeled set object
@@ -43,18 +48,21 @@ class LabeledSet:
 
 class DataPool:
     """
-    The pool of data consisting of the nearest neighbors.
+    The pool of data consisting of the unlabeled nearest neighbors.
     The selection strategy chooses the data to label from this pool.
     """
 
     def __init__(self):
+        """
+        Initialize a DataPool instance.
+        """
         self.indices = []  # Indices of the pool elements in the faiss index
         self.indices_set = set()
         self.embeddings = np.empty((0, 256))
 
     def add(self, embeddings: np.ndarray, indices: List) -> None:
         """
-        Add data points to the data pool
+        Add data points to the data pool.
         :param embeddings: The embeddings to add to the pool
         :param indices: The corresponding indices for the embeddings
         """
