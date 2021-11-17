@@ -247,7 +247,7 @@ class FullSupervisionBaseline(BaseBaselineALgorithm):
         """
         super().__init__("FullSupervision")
         self.classifier = LogisticRegressionClassifier(
-            max_iter=100, solver="liblinear"
+            max_iter=100, solver="saga"
         )
         self.scores = {"precision": [], "recall": [], "average_precision": []}
 

@@ -14,11 +14,11 @@ if __name__ == "__main__":
     seals = SEALSAlgorithm(
         classifier,
         selection,
-        num_classes=10,
+        num_classes=30,
         random_classes=False,
         baseline_algorithms=baselines,
     )
-    scores = seals.run(repetitions=2)
+    scores = seals.run(repetitions=3)
 
     with open("data/results.json", "w") as fp:
         json.dump(scores, fp)

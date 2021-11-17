@@ -1,6 +1,6 @@
 # This file implements the classifiers used for evaluation.
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -36,7 +36,12 @@ class LogisticRegressionClassifier(BaseClassifier):
     """
 
     def __init__(
-        self, solver: str = "saga", verbose: int = 0, max_iter: int = 5000
+        self,
+        solver: str = "lbfgs",
+        verbose: int = 0,
+        max_iter: int = 100,
+        C: float = 0.001,
+        class_weight: Union[List, int, str] = "balanced",
     ) -> None:
         """
         Initialize the classifier
@@ -45,6 +50,8 @@ class LogisticRegressionClassifier(BaseClassifier):
         self.solver = solver
         self.verbose = verbose
         self.max_iter = max_iter
+        self.c_param = C
+        self.class_weight = class_weight
         self.clf = None
 
     def train(self, labeled_data: LabeledSet) -> None:
@@ -54,7 +61,11 @@ class LogisticRegressionClassifier(BaseClassifier):
         """
         X, y = labeled_data.get_data()
         self.clf = LogisticRegression(
-            max_iter=self.max_iter, solver=self.solver, verbose=self.verbose
+            max_iter=self.max_iter,
+            solver=self.solver,
+            verbose=self.verbose,
+            C=self.c_param,
+            class_weight=self.class_weight,
         )
         self.clf.fit(X, y)
 
