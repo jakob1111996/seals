@@ -44,7 +44,12 @@ class LogisticRegressionClassifier(BaseClassifier):
         class_weight: Union[List, int, str] = "balanced",
     ) -> None:
         """
-        Initialize the classifier
+        This function initializes the classifier and stores the parameters
+        :param solver: The solver to use for Logistic Regression
+        :param verbose: The verbosity level for Logistic Regression
+        :param max_iter: The maximum number of training iterations
+        :param C: The regularization parameter C for Logistic Regression
+        :param class_weight: How to weight the classes for Logistic Regression
         """
         super().__init__()
         self.solver = solver
