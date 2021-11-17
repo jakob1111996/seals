@@ -97,8 +97,6 @@ class SEALSAlgorithm:
             for i in range(self.batch_size):
                 self.add_element_to_set(eval_class)
             self.update_baselines()
-        np.save("ind.npy", self.labeled_set.indices)
-        np.save("y.npy", self.labeled_set.y)
         self.classifier.train(self.labeled_set)
         self.update_baselines()
         scores = self.compute_scores(test_data, scores)
