@@ -18,7 +18,7 @@ class FaissIndex:
     which is used as a k-Nearest-Neighbors implementation.
     """
 
-    def __init__(self, n_bits: int = 24, uri_set: set = None):
+    def __init__(self, n_bits: int = 24, uri_set: set = None) -> None:
         """
         Constructor for the FaissIndex class
         :param n_bits: The number of bits used for the LSH hashes
@@ -120,7 +120,7 @@ class FaissIndex:
         Find data that has no labels, and thus can not be used.
         :param uris: All URIs read from the embedding file.
         :param uri_set: Set of all allowed URIs
-        :return:
+        :return: List of indices of the URIs without labels.
         """
         drop_lines = []
         for index, uri in enumerate(uris):

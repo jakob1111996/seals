@@ -27,10 +27,15 @@ class DataManager:
             oidv6-train-images-with-labels-with-rotation.csv
     """
 
-    def __init__(self, num_classes: int = 10, random_classes: bool = False):
+    def __init__(
+        self, num_classes: int = 10, random_classes: bool = False
+    ) -> None:
         """
         Constructor for the data reader class.
         :param num_classes: The number of evaluation classes
+        :param random_classes: Classes can either be selected randomly from
+            all classes in the test set with (100, 6817) elements or we can
+            use the classes used in the SEALS paper
         """
         self.num_embeddings = 6_607_906
         self.num_test_embeddings = 113_508
@@ -106,7 +111,9 @@ class DataManager:
                 possible_classes, class_count, False
             )
         else:
-            self.eval_classes = self.read_classes_from_file()[:class_count]
+            self.eval_classes = np.random.choice(
+                self.read_classes_from_file(), class_count, False
+            )
 
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
@@ -203,6 +210,7 @@ class DataManager:
     def get_test_data(self, eval_class: str) -> Tuple[np.ndarray, np.ndarray]:
         """
         This function returns the test data for the given class
+        :param eval_class: The class we are evaluating currently
         :return: Tuple of embeddings and labels from the test set:
             0: embeddings: np.ndarray in format (n, 256)
             1: labels: np.ndarray in format (n,) with entries 0 or 1
@@ -228,6 +236,11 @@ class DataManager:
 
     @staticmethod
     def read_classes_from_file(file_path: str = "data/used_classes.csv"):
+        """
+        Read the classes used in SEALS from the provided csv file.
+        :param file_path: The path to the csv file with specified classes.
+        :return: The IDs of the classes as a list
+        """
         class_names = get_csv_column(file_path, 0)
         class_dict = {}
         with open(classes_file) as csv_file:

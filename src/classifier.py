@@ -1,5 +1,6 @@
+# This file implements the classifiers used for evaluation.
 from abc import ABC, abstractmethod
-from typing import Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -34,11 +35,28 @@ class LogisticRegressionClassifier(BaseClassifier):
     Logistic Regression classifier wrapping sklearn LogisticRegression
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        solver: str = "lbfgs",
+        verbose: int = 0,
+        max_iter: int = 100,
+        C: float = 0.001,
+        class_weight: Union[List, int, str] = "balanced",
+    ) -> None:
         """
-        Initialize the classifier
+        This function initializes the classifier and stores the parameters
+        :param solver: The solver to use for Logistic Regression
+        :param verbose: The verbosity level for Logistic Regression
+        :param max_iter: The maximum number of training iterations
+        :param C: The regularization parameter C for Logistic Regression
+        :param class_weight: How to weight the classes for Logistic Regression
         """
         super().__init__()
+        self.solver = solver
+        self.verbose = verbose
+        self.max_iter = max_iter
+        self.c_param = C
+        self.class_weight = class_weight
         self.clf = None
 
     def train(self, labeled_data: LabeledSet) -> None:
@@ -47,7 +65,13 @@ class LogisticRegressionClassifier(BaseClassifier):
         :param labeled_data: The labeled dataset to train on.
         """
         X, y = labeled_data.get_data()
-        self.clf = LogisticRegression(max_iter=1000, solver="saga")
+        self.clf = LogisticRegression(
+            max_iter=self.max_iter,
+            solver=self.solver,
+            verbose=self.verbose,
+            C=self.c_param,
+            class_weight=self.class_weight,
+        )
         self.clf.fit(X, y)
 
     def predict(self, X: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
