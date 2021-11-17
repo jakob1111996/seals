@@ -246,7 +246,9 @@ class FullSupervisionBaseline(BaseBaselineALgorithm):
         Initialize the full supervision baseline algorithm
         """
         super().__init__("FullSupervision")
-        self.classifier = LogisticRegressionClassifier()
+        self.classifier = LogisticRegressionClassifier(
+            max_iter=100, solver="liblinear"
+        )
         self.scores = {"precision": [], "recall": [], "average_precision": []}
 
     def iteration(self) -> None:

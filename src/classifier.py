@@ -36,7 +36,7 @@ class LogisticRegressionClassifier(BaseClassifier):
     """
 
     def __init__(
-        self, solver: str = "saga", verbose: int = 0, max_iter: int = 1000
+        self, solver: str = "saga", verbose: int = 0, max_iter: int = 5000
     ) -> None:
         """
         Initialize the classifier

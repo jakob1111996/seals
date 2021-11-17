@@ -27,8 +27,22 @@ class Plotter:
         data = []
         for class_name, class_scores in scores.items():
             data.append(class_scores[key])
-        stds = np.std(np.asarray(data), axis=0).reshape((20, 1))
         data = np.mean(np.asarray(data), axis=0).reshape((20, 1))
+        class_data = {}
+        for class_name, class_scores in scores.items():
+            if class_name[:-2] not in class_data:
+                class_data[class_name[:-2]] = []
+            class_data[class_name[:-2]].append(class_scores[key])
+        class_stds = np.empty((20, 0))
+        for class_name, values in class_data.items():
+            class_stds = np.concatenate(
+                [
+                    class_stds,
+                    np.std(np.asarray(values), axis=0).reshape((20, 1)),
+                ],
+                axis=1,
+            )
+        stds = np.mean(class_stds, axis=1).reshape((20, 1))
         data, stds, labels = Plotter.add_baseline_data(data, stds, scores, key)
         x = range(100, 2001, 100)
         for i in range(data.shape[1]):
@@ -92,26 +106,59 @@ class Plotter:
             2: The labels of SEALS and the baselines for the legend.
         """
         labels = ["MaxEnt-SEALS"]
-
         baseline_data = {}
         for class_name, class_scores in scores.items():
             baseline_dict = class_scores["baselines"]
             for baseline_name, baseline_values in baseline_dict.items():
+                if baseline_name not in baseline_data:
+                    baseline_data[baseline_name] = {}
                 if key in baseline_values:
-                    if baseline_name not in baseline_data:
-                        baseline_data[baseline_name] = []
-                    baseline_data[baseline_name].append(baseline_values[key])
+                    if class_name[:-2] not in baseline_data[baseline_name]:
+                        baseline_data[baseline_name][class_name[:-2]] = []
+                    baseline_data[baseline_name][class_name[:-2]].append(
+                        baseline_values[key]
+                    )
+                if baseline_name not in labels:
                     labels.append(baseline_name)
-        if baseline_data:
-            for baseline_name, values in baseline_data.items():
-                baseline_std = np.std(np.asarray(values), axis=0).reshape(
-                    (20, 1)
-                )
+        # Get mean and std for every class separately
+        baseline_means = {}
+        baseline_stds = {}
+        for baseline_name, baseline_values in baseline_data.items():
+            baseline_means[baseline_name] = np.empty((20, 0))
+            baseline_stds[baseline_name] = np.empty((20, 0))
+            for class_name, values in baseline_values.items():
                 baseline_mean = np.mean(np.asarray(values), axis=0).reshape(
                     (20, 1)
                 )
-                data = np.concatenate([data, baseline_mean], axis=1)
-                stds = np.concatenate([stds, baseline_std], axis=1)
+                baseline_means[baseline_name] = np.concatenate(
+                    [baseline_means[baseline_name], baseline_mean], axis=1
+                )
+                baseline_std = np.std(np.asarray(values), axis=0).reshape(
+                    (20, 1)
+                )
+                baseline_stds[baseline_name] = np.concatenate(
+                    [baseline_stds[baseline_name], baseline_std], axis=1
+                )
+            if baseline_means[baseline_name].shape[1] != 0:
+                data = np.concatenate(
+                    [
+                        data,
+                        np.mean(baseline_means[baseline_name], axis=1).reshape(
+                            (20, 1)
+                        ),
+                    ],
+                    axis=1,
+                )
+                stds = np.concatenate(
+                    [
+                        stds,
+                        np.mean(baseline_stds[baseline_name], axis=1).reshape(
+                            (20, 1)
+                        ),
+                    ],
+                    axis=1,
+                )
+                labels.append(baseline_name)
         return data, stds, labels
 
     @staticmethod
@@ -127,4 +174,4 @@ class Plotter:
 
 
 if __name__ == "__main__":
-    Plotter.create_plots_from_file("data/results.json")
+    Plotter.create_plots_from_file("data/results/results_20.json")

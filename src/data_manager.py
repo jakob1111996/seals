@@ -111,7 +111,9 @@ class DataManager:
                 possible_classes, class_count, False
             )
         else:
-            self.eval_classes = self.read_classes_from_file()[:class_count]
+            self.eval_classes = np.random.choice(
+                self.read_classes_from_file(), class_count, False
+            )
 
         for class_name in self.eval_classes:
             self.eval_class_ids[class_name] = class_ids[class_name]
