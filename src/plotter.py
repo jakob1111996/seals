@@ -5,6 +5,9 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 import numpy as np
 
+from src.data_manager import DataManager
+from src.definitions import cleaned_train_annotations_file
+
 
 class Plotter:
     """
@@ -13,7 +16,12 @@ class Plotter:
 
     @staticmethod
     def create_plot(
-        scores: Dict, ax: plt.axis, title: str, key: str, colors: List[str]
+        scores: Dict,
+        ax: plt.axis,
+        title: str,
+        key: str,
+        colors: List[str],
+        class_counts: Dict[str, int],
     ) -> None:
         """
         This function creates a plot with all required lines and confidence
@@ -23,27 +31,39 @@ class Plotter:
         :param title: The title used for the y label of the plot
         :param key: The score name we are plotting in this plot
         :param colors: A list of colors to use for the plot
+        :param class_counts: The true number of positives for each class.
         """
+        is_recall = key == "recall"
         data = []
         for class_name, class_scores in scores.items():
-            data.append(class_scores[key])
+            if is_recall:
+                data.append(
+                    list(
+                        np.array(class_scores["positives"])
+                        / class_counts[class_name[:-2]]
+                    )
+                )
+            else:
+                data.append(class_scores[key])
         data = np.mean(np.asarray(data), axis=0).reshape((20, 1))
-        class_data = {}
+        rep_data = {}
         for class_name, class_scores in scores.items():
-            if class_name[:-2] not in class_data:
-                class_data[class_name[:-2]] = []
-            class_data[class_name[:-2]].append(class_scores[key])
-        class_stds = np.empty((20, 0))
-        for class_name, values in class_data.items():
-            class_stds = np.concatenate(
+            if class_name[-1:] not in rep_data:
+                rep_data[class_name[-1:]] = []
+            rep_data[class_name[-1:]].append(class_scores[key])
+        class_means = np.empty((20, 0))
+        for class_name, values in rep_data.items():
+            class_means = np.concatenate(
                 [
-                    class_stds,
-                    np.std(np.asarray(values), axis=0).reshape((20, 1)),
+                    class_means,
+                    np.mean(np.asarray(values), axis=0).reshape((20, 1)),
                 ],
                 axis=1,
             )
-        stds = np.mean(class_stds, axis=1).reshape((20, 1))
-        data, stds, labels = Plotter.add_baseline_data(data, stds, scores, key)
+        stds = np.std(class_means, axis=1).reshape((20, 1))
+        data, stds, labels = Plotter.add_baseline_data(
+            data, stds, scores, key, class_counts
+        )
         x = range(100, 2001, 100)
         for i in range(data.shape[1]):
             ax.plot(
@@ -72,17 +92,27 @@ class Plotter:
         dictionary
         :param scores: The dictionary with all the scores of the runs.
         """
+        class_counts, _ = DataManager.get_positives_for_classes(
+            cleaned_train_annotations_file
+        )
         colors = ["tab:blue", "tab:orange", "tab:green", "tab:red"]
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
         Plotter.create_plot(
-            scores, axes[0][0], "mAP", "average_precision", colors
+            scores,
+            axes[0][0],
+            "mAP",
+            "average_precision",
+            colors,
+            class_counts,
         )
         Plotter.create_plot(
-            scores, axes[0][1], "Pool Size", "pool_size", colors
+            scores, axes[0][1], "Pool Size", "pool_size", colors, class_counts
         )
-        Plotter.create_plot(scores, axes[1][0], "Recall", "recall", colors)
         Plotter.create_plot(
-            scores, axes[1][1], "Positives", "positives", colors
+            scores, axes[1][0], "Recall", "recall", colors, class_counts
+        )
+        Plotter.create_plot(
+            scores, axes[1][1], "Positives", "positives", colors, class_counts
         )
         plt.tight_layout()
         plt.savefig("data/results.png")
@@ -90,7 +120,11 @@ class Plotter:
 
     @staticmethod
     def add_baseline_data(
-        data: np.ndarray, stds: np.ndarray, scores: Dict, key: str
+        data: np.ndarray,
+        stds: np.ndarray,
+        scores: Dict,
+        key: str,
+        class_counts: Dict[str, int],
     ):
         """
         This function extracts the scores from the baseline algorithms
@@ -99,12 +133,14 @@ class Plotter:
         :param stds: The SEALS standard deviation ready for plotting
         :param scores: The scores dictionary
         :param key: The name of the score to extract right now.
+        :param class_counts: The true number of positives for each class
         :return: Tuple with three elements:
             0: The SEALS data concatenated with the baseline data for plotting
                 in shape (20, 1 + n_baselines)
             1: The SEALS stdd concatenated with the baseline stdds
             2: The labels of SEALS and the baselines for the legend.
         """
+        is_recall = key == "recall"
         labels = ["MaxEnt-SEALS"]
         baseline_data = {}
         for class_name, class_scores in scores.items():
@@ -113,31 +149,31 @@ class Plotter:
                 if baseline_name not in baseline_data:
                     baseline_data[baseline_name] = {}
                 if key in baseline_values:
-                    if class_name[:-2] not in baseline_data[baseline_name]:
-                        baseline_data[baseline_name][class_name[:-2]] = []
-                    baseline_data[baseline_name][class_name[:-2]].append(
-                        baseline_values[key]
-                    )
-                if baseline_name not in labels:
-                    labels.append(baseline_name)
+                    if class_name[-1:] not in baseline_data[baseline_name]:
+                        baseline_data[baseline_name][class_name[-1:]] = []
+                    if is_recall:
+                        baseline_data[baseline_name][class_name[-1:]].append(
+                            list(
+                                np.array(baseline_values["positives"])
+                                / class_counts[class_name[:-2]]
+                            )
+                        )
+                    else:
+                        baseline_data[baseline_name][class_name[-1:]].append(
+                            baseline_values[key]
+                        )
         # Get mean and std for every class separately
         baseline_means = {}
         baseline_stds = {}
         for baseline_name, baseline_values in baseline_data.items():
             baseline_means[baseline_name] = np.empty((20, 0))
             baseline_stds[baseline_name] = np.empty((20, 0))
-            for class_name, values in baseline_values.items():
+            for repetition, values in baseline_values.items():
                 baseline_mean = np.mean(np.asarray(values), axis=0).reshape(
                     (20, 1)
                 )
                 baseline_means[baseline_name] = np.concatenate(
                     [baseline_means[baseline_name], baseline_mean], axis=1
-                )
-                baseline_std = np.std(np.asarray(values), axis=0).reshape(
-                    (20, 1)
-                )
-                baseline_stds[baseline_name] = np.concatenate(
-                    [baseline_stds[baseline_name], baseline_std], axis=1
                 )
             if baseline_means[baseline_name].shape[1] != 0:
                 data = np.concatenate(
@@ -152,7 +188,7 @@ class Plotter:
                 stds = np.concatenate(
                     [
                         stds,
-                        np.mean(baseline_stds[baseline_name], axis=1).reshape(
+                        np.std(baseline_means[baseline_name], axis=1).reshape(
                             (20, 1)
                         ),
                     ],
@@ -174,4 +210,4 @@ class Plotter:
 
 
 if __name__ == "__main__":
-    Plotter.create_plots_from_file("data/results/results_20.json")
+    Plotter.create_plots_from_file("data/results.json")
