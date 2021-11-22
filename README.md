@@ -15,6 +15,11 @@ pip install -r requirements.txt
 ```python
 python main.py
 ```
+To run the manual labeling dashboard, run
+```python
+python main_manual_labeling.py
+```
+You will see a link to a dashboard in the terminal which can be used for manual labeling.
 
 ### Extras
 Install the pre-commit hooks for linting:

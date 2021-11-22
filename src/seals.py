@@ -51,6 +51,7 @@ class SEALSAlgorithm:
         self.selection = selection
         self.batch_size = 100
         self.baselines = baseline_algorithms
+        self.manual_labeling = False
 
     def run(self, repetitions: int = 5) -> Dict[str, Dict]:
         """
