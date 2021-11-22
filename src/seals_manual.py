@@ -85,12 +85,15 @@ class SEALSManualAlgorithm(SEALSAlgorithm):
         """
         self.add_data_to_labeled_set()
         if self.labeled_set.size % 100 == 0 and self.labeled_set.size > 0:
+            print("Training classifier and getting scores")
             self.classifier.train(self.labeled_set)
             self.scores = self.compute_scores(self.test_data, self.scores)
         if self.labeled_set.size == 2000:
+            print("Algorithm finished. Storing results in file.")
             self.scores = {f"{self.eval_class}_0": self.scores}
             with open("data/results_manual.json", "w") as fp:
                 json.dump(self.scores, fp)
+            exit(0)
         if self.labeled_set.size == 100:
             self.add_neighbors_to_pool(self.labeled_set.get_data()[0])
         if self.labeled_set.size < 5:
