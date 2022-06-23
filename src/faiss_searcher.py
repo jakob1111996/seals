@@ -8,7 +8,11 @@ import faiss
 import numpy as np
 from alive_progress import alive_bar
 
-from src.definitions import cleaned_train_uri_file
+from src.definitions import (
+    cleaned_train_uri_file,
+    train_embeddings_file,
+    train_folder,
+)
 from src.util import read_parquet_file
 
 
@@ -18,7 +22,12 @@ class FaissIndex:
     which is used as a k-Nearest-Neighbors implementation.
     """
 
-    def __init__(self, n_bits: int = 24, uri_set: set = None) -> None:
+    def __init__(
+        self,
+        n_bits: int = 24,
+        uri_set: set = None,
+        index_file: str = "data/faiss.index",
+    ) -> None:
         """
         Constructor for the FaissIndex class
         :param n_bits: The number of bits used for the LSH hashes
@@ -27,9 +36,14 @@ class FaissIndex:
         self.embedding_dim = 256
         self.n_bits = n_bits
         self.index = faiss.IndexLSH(self.embedding_dim, n_bits)
-        self.index_file_name = "data/faiss.index"
+        self.index_file_name = index_file
+        try:
+            self.force_tty = True
+            os.get_terminal_size()
+        except (OSError):
+            self.force_tty = False
         if os.path.exists(self.index_file_name):
-            self.load_index()
+            self.load_index(self.index_file_name)
         else:
             if not uri_set:
                 raise RuntimeError(
@@ -38,7 +52,11 @@ class FaissIndex:
                     "initial setup (see DataManager class)."
                 )
             self.read_embeddings(
-                uri_set, "data/train_embeddings.bin", cleaned_train_uri_file
+                uri_set,
+                train_embeddings_file,
+                cleaned_train_uri_file,
+                train_folder,
+                True,
             )
 
     def add_data_to_index(self, data: np.ndarray) -> None:
@@ -93,7 +111,7 @@ class FaissIndex:
         with alive_bar(
             len(glob.glob(os.path.join(data_folder, "*.parquet.gzip"))),
             title="Reading embeddings",
-            force_tty=True,
+            force_tty=self.force_tty,
         ) as bar:
             for file in glob.glob(os.path.join(data_folder, "*.parquet.gzip")):
                 data, uris = read_parquet_file(file)
@@ -112,7 +130,7 @@ class FaissIndex:
 
         self.save_uris(write_uri_file, image_uris)
         if create_index:
-            self.save_index()  # Save faiss index to a file for later use
+            self.save_index(self.index_file_name)
 
     @staticmethod
     def find_unlabeled_data(uris: np.ndarray, uri_set: set) -> List:

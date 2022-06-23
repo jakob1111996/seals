@@ -29,3 +29,11 @@ cleaned_test_annotations_file = "data/cleaned-test-annotations.csv"
 train_folder = "data/saved_embeddings/train"
 # Test data folder
 test_folder = "data/saved_embeddings/test"
+# Training embeddings cleaned
+train_embeddings_file = "data/train_embeddings.bin"
+# Testing embeddings cleaned
+test_embeddings_file = "data/test_embeddings.bin"
+# Classes from the paper
+used_classes_file = "data/used_classes.csv"
+# Faiss index file
+faiss_index_file = "data/faiss.index"

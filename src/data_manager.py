@@ -28,7 +28,11 @@ class DataManager:
     """
 
     def __init__(
-        self, num_classes: int = 10, random_classes: bool = False
+        self,
+        num_classes: int = 10,
+        random_classes: bool = False,
+        num_embeddings: int = 6_607_906,
+        num_test_embeddings: int = 113_508,
     ) -> None:
         """
         Constructor for the data reader class.
@@ -37,8 +41,8 @@ class DataManager:
             all classes in the test set with (100, 6817) elements or we can
             use the classes used in the SEALS paper
         """
-        self.num_embeddings = 6_607_906
-        self.num_test_embeddings = 113_508
+        self.num_embeddings = num_embeddings
+        self.num_test_embeddings = num_test_embeddings
         self.num_classes = num_classes
         self.eval_classes = None
         self.eval_class_ids = {}
@@ -49,7 +53,7 @@ class DataManager:
         self.get_indices_for_positives()
         print("Data Setup completed successfully!")
         self.embedding_mm = np.memmap(
-            "data/train_embeddings.bin",
+            train_embeddings_file,
             dtype="float32",
             mode="r",
             shape=(self.num_embeddings, 256),
@@ -183,7 +187,7 @@ class DataManager:
             cleaned_train_annotations_file,
             train_annotations_file,
         )
-        fi = FaissIndex(uri_set=train_uri_set)
+        fi = FaissIndex(uri_set=train_uri_set, index_file=faiss_index_file)
         test_uri_set = cleanup_annotations(
             test_folder,
             test_images_file,
@@ -192,7 +196,7 @@ class DataManager:
         )
         fi.read_embeddings(
             test_uri_set,
-            "data/test_embeddings.bin",
+            test_embeddings_file,
             cleaned_test_uri_file,
             test_folder,
             False,
@@ -217,7 +221,7 @@ class DataManager:
         """
         embeddings = np.array(
             np.memmap(
-                "data/test_embeddings.bin",
+                test_embeddings_file,
                 dtype="float32",
                 mode="r",
                 shape=(self.num_test_embeddings, 256),
@@ -235,7 +239,7 @@ class DataManager:
         return embeddings, labels
 
     @staticmethod
-    def read_classes_from_file(file_path: str = "data/used_classes.csv"):
+    def read_classes_from_file(file_path: str = used_classes_file):
         """
         Read the classes used in SEALS from the provided csv file.
         :param file_path: The path to the csv file with specified classes.
